@@ -991,7 +991,7 @@ function build_puretypes(big_terms::Dict{FKey{T}, ComplexF64}) where {T<:Unsigne
 end
 
 """
-Fermionic speciic inner ⟨a,b⟩ = Tr(a† b) / 2^L, computed from site types.
+Fermionic specific inner ⟨a,b⟩ = Tr(a† b) / 2^L, computed from site types.
 
 - Each monomial pair the weight is 2^{-m}, where m = popcount( (C₁|A₁) ∪ (C₂|A₂) ).
 - Matching uses same-type partition: (c-only with c-only) and (a-only with a-only).
