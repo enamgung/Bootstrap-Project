@@ -408,7 +408,6 @@ function apply_action(A::SparseMatrixCSC{ComplexF64,Int}, x::OpVec; show_progres
     st = time()
     sy = A * x          # SparseVector{ComplexF64,Int}
     fn = time()
-    show_progress && println("  [apply_action] : $(fn - st) seconds")
 
     # Enforce TOL2 if you want:
     return sy
@@ -958,7 +957,7 @@ function krylov(H::O;
     show_progress::Bool = false,
 
     closure_depth::Union{Int, Nothing} = nothing,
-    max_basis_size::Int = 100_000_000,
+    max_basis_size::Int = 100000000,
 
     enable_reorth::Bool = false,
     reorth_first::Int = 5,
@@ -1170,7 +1169,7 @@ subject to F0 + Σ_k x_k Fk  ⪰ 0
 where Fk are from the OPE tensor of the Lanczos tridiagonal T.
 Returns ρ (as a MajoranaOperator), along with (space, x, obj) if requested.
 """
-function qboot(H::O; show_progress::Bool = false, tol::Float64 = 1e-5, max_power::Union{Int, Nothing} = nothing, closure_depth::Int = 1000, max_basis_size::Int = 800_000 , enable_reorth::Bool=false, reorth_first::Int) where {O<:Operator}
+function qboot(H::O; show_progress::Bool = false, tol::Float64 = 1e-5, max_power::Union{Int, Nothing} = nothing, closure_depth::Int = 1000, max_basis_size::Int = 10000000 , enable_reorth::Bool=false, reorth_first::Int=0) where {O<:Operator}
 
     space = krylov(H; tol = tol, max_power = max_power, show_progress = show_progress, closure_depth = closure_depth, max_basis_size = max_basis_size, enable_reorth = enable_reorth, reorth_first = reorth_first)
     n = length(space.basis)
