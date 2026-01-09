@@ -95,10 +95,12 @@ Base.hash(k::PKey{T}, h::UInt) where {T<:Unsigned} = hash((k.x, k.z), h)
 unit(::Type{PauliOperator{T}}) where {T<:Unsigned} =
     PauliOperator{T}(Dict(PKey{T}(zero(T), zero(T)) => 1.0 + 0im))
 unit(op::PauliOperator{T}) where {T<:Unsigned} = unit(PauliOperator{T})
+unit(::Type{PauliOperator}) = unit(PauliOperator{UInt64})
 
 zero(::Type{PauliOperator{T}}) where {T<:Unsigned} =
     PauliOperator{T}(Dict{PKey{T},ComplexF64}())
 zero(op::PauliOperator{T}) where {T<:Unsigned} = zero(PauliOperator{T})
+zero(::Type{PauliOperator}) = zero(PauliOperator{UInt64})
 
 
 # Single-site Paulis (index convention: bit j; use j-1 if you prefer 1-based sites)
@@ -355,10 +357,12 @@ end
 unit(::Type{MajoranaOperator{T}}) where {T<:Unsigned} =
     MajoranaOperator{T}(Dict{T,ComplexF64}(zero(T) => 1.0 + 0im))
 unit(op::MajoranaOperator{T}) where {T<:Unsigned} = unit(MajoranaOperator{T})
+unit(::Type{MajoranaOperator}) = unit(MajoranaOperator{UInt64})
 
 zero(::Type{MajoranaOperator{T}}) where {T<:Unsigned} =
     MajoranaOperator{T}(Dict{T,ComplexF64}())
 zero(op::MajoranaOperator{T}) where {T<:Unsigned} = zero(MajoranaOperator{T})
+zero(::Type{MajoranaOperator}) = zero(MajoranaOperator{UInt64})
 
 
 # ---------- constructors ----------
@@ -531,7 +535,6 @@ end
     return p
 end
 
-# Cache ONLY for UInt64 (fast + type-stable). Other T: compute directly.
 const _PP_CACHE64 = Dict{UInt64,UInt64}()
 const _PP_LOCK    = ReentrantLock()
 
@@ -703,10 +706,13 @@ end
 unit(::Type{FermionOperator{T}}) where {T<:Unsigned} =
     FermionOperator{T}(Dict(FKey{T}(z(T), z(T)) => 1.0 + 0im))
 unit(op::FermionOperator{T}) where {T} = unit(FermionOperator{T})
+unit(::Type{FermionOperator}) = unit(FermionOperator{UInt64})
+
 
 zero(::Type{FermionOperator{T}}) where {T<:Unsigned} =
     FermionOperator{T}(Dict{FKey{T}, ComplexF64}())
 zero(op::FermionOperator{T}) where {T} = zero(FermionOperator{T})
+zero(::Type{FermionOperator}) = zero(FermionOperator{UInt64})
 
 
 # ------------- Constructors -------------
@@ -991,7 +997,7 @@ function build_puretypes(big_terms::Dict{FKey{T}, ComplexF64}) where {T<:Unsigne
 end
 
 """
-Fermionic specific inner ⟨a,b⟩ = Tr(a† b) / 2^L, computed from site types.
+Fermionic speciic inner ⟨a,b⟩ = Tr(a† b) / 2^L, computed from site types.
 
 - Each monomial pair the weight is 2^{-m}, where m = popcount( (C₁|A₁) ∪ (C₂|A₂) ).
 - Matching uses same-type partition: (c-only with c-only) and (a-only with a-only).
@@ -1281,7 +1287,7 @@ function _fmul_threaded(a::FermionOperator{T}, b::FermionOperator{T})::FermionOp
             r = Fkey_mul(ka, Bk[j])
             r === nothing && continue
             Cb, Ab, S, sgn = r
-
+            """
             # Filter out terms with more than 10 creators or annihilators
             if locality
                 # crude but fast: use support including potential (1-n) expansion bits
@@ -1290,6 +1296,7 @@ function _fmul_threaded(a::FermionOperator{T}, b::FermionOperator{T})::FermionOp
                     continue
                 end
             end
+            """
             expand_S(d, Cb, Ab, S, (sgn == 1 ? c2 : -c2))
         end
     end
