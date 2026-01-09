@@ -980,8 +980,6 @@ function krylov(H::O;
 
     cache = krylov_cache(H, B)
 
-    show_progress && println("Frozen basis size: $(length(B.keys)) monomials")
-
     op0 = unit(H)
 
     basis_vecs = OpVec[]
