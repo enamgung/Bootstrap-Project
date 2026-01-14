@@ -103,7 +103,7 @@ function build_mono_table(op::Operator{A, K})::MonoTable{K} where {A<:AlgTag, K}
     return MonoTable{K}(ks, idx, packed)
 end
 
-# =============== Vector-form operator over the frozen basis (kept) ===============
+#OPvec: Vector-form operator over the labeled indices 
 const OpVec = SparseVector{ComplexF64, Int}
 
 
@@ -1131,7 +1131,7 @@ end
 """
 Truncate operator by dropping all terms with locality measure above max_locality.
 If max_locality is nothing, returns H unchanged.
-Locality measure: l = r + Σ |site| where r is the number of operators.
+Locality measure: l = r + sum of |site| where r is the number of operators, and |site| is how far away each term is
 Not working since breaks Krylov space closure, and basis orthognality.
 """
 function truncate_by_locality(H::FermionOperator{T}, max_locality::Union{Int, Nothing}) where {T<:Unsigned}
@@ -1197,8 +1197,8 @@ function qboot(H::O; show_progress::Bool = false, tol::Float64 = 1e-5, max_power
     optimize!(model)
 
     xval = value.(x)
-    coeffs = vcat(1.0, xval)            # prepend 1 (for p₀)
-    rho = reconstruct(space, coeffs)  # rho::O (concrete)
+    coeffs = vcat(1.0, xval)        
+    rho = reconstruct(space, coeffs) 
 
     return rho
 end
