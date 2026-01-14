@@ -20,7 +20,7 @@ struct FKey{T<:Unsigned}
 end
 
 
-# Key: Pauli monomial (∏ X_i)(∏ Z_j)
+# Key: Pauli monomial (∏ X_i)(∏ Z_j), (Y_i can be expressed by their product)
 struct PKey{T<:Unsigned}
     x::T
     z::T
@@ -81,7 +81,7 @@ idkey(::Type{T}) where {T<:Unsigned} = zero(T)
 
 idkey(::Type{PKey}) = PKey(0x0, 0x0)
 
-# Trace: coefficient in front of identity, else 0 
+# Trace: coefficient in front of identity, else 0 (fermion operator specified later) 
 trace(op::Operator{A,K}) where {A<:AlgTag,K} =
     get(op.terms, idkey(K), 0.0 + 0.0im)
 
@@ -131,7 +131,6 @@ function py(::Type{T}, js::Vararg{Int,N}) where {T<:Unsigned,N}
     @inbounds for j in js
         m ⊻= (one(T) << j)
     end
-    # Y has both X and Z bits set
     return PauliOperator{T}(Dict(PKey{T}(m, m) => 1.0 + 0im))
 end
 py(js::Vararg{Int,N}) where {N} = py(UInt64, js...)
@@ -487,7 +486,7 @@ end
 
 Base.:-(a::MajoranaOperator{T}, b::MajoranaOperator{T}) where {T<:Unsigned} = sum_maj(a, b, -1)
 
-# number + operator, operator + number
+# number + operator, operator + number: defined by adding identity * number
 Base.:+(op::MajoranaOperator{T}, s::Number) where {T<:Unsigned} = op + (s*unit(op))
 Base.:+(s::Number, op::MajoranaOperator{T}) where {T<:Unsigned} = op + s
 Base.:-(op::MajoranaOperator{T}, s::Number) where {T<:Unsigned} = op + (-s)
@@ -523,7 +522,6 @@ end
 # ---------- Fast sign via prefix-parity mask ----------
 # For each bit position i, the prefix-parity mask has bit i = 1
 # iff the number of set bits in b with index < i is odd.
-# ---------- Fast sign via prefix-parity mask (generic) ----------
 @inline function _prefix_parity_mask(b::T)::T where {T<:Unsigned}
     p = zero(T)
     bb = b
@@ -1002,7 +1000,7 @@ Fermionic speciic inner ⟨a,b⟩ = Tr(a† b) / 2^L, computed from site types.
 - Each monomial pair the weight is 2^{-m}, where m = popcount( (C₁|A₁) ∪ (C₂|A₂) ).
 - Matching uses same-type partition: (c-only with c-only) and (a-only with a-only).
 - If `normalized=false`, the final sum is multiplied by 2^{Ltot}, where
-    Ltot = popcount( ⋃ of (C|A) over all terms in a and b ).
+    Ltot = popcount( union of (C|A) over all terms in a and b ).
 """
 function inner(a::FermionOperator{T}, b::FermionOperator{T};
                 normalized::Bool = true)::ComplexF64 where {T<:Unsigned}
@@ -1142,7 +1140,7 @@ end
 @inline _is_even_op(c::T, a::T) where {T<:Unsigned} = iseven(count_ones(c) + count_ones(a))
 
 
-# locality measure: l = r + Σ |site|
+# locality measure: l = r + sum of # of |site|
 # assuming 2 spin-orbitals per site: j = 2*site + spin
 @inline function locality_measure(S::T) where {T<:Unsigned}
     r = _pcT(S)
@@ -1288,7 +1286,7 @@ function _fmul_threaded(a::FermionOperator{T}, b::FermionOperator{T})::FermionOp
             r === nothing && continue
             Cb, Ab, S, sgn = r
             """
-            # Filter out terms with more than 10 creators or annihilators
+            # locality constraint
             if locality
                 # crude but fast: use support including potential (1-n) expansion bits
                 support_mask = (Cb | Ab | S)
@@ -1296,6 +1294,7 @@ function _fmul_threaded(a::FermionOperator{T}, b::FermionOperator{T})::FermionOp
                     continue
                 end
             end
+        
             """
             expand_S(d, Cb, Ab, S, (sgn == 1 ? c2 : -c2))
         end
